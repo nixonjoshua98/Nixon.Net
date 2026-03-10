@@ -7,7 +7,7 @@ using OpenIddict.Abstractions;
 namespace Nixon.Identity.OpenIddict.Template.BackgroundService;
 
     internal sealed class ApplicationRegistrationBackgroundService(
-        OpenIddictIdentityServerConfiguration configuration,
+        IOpenIddictFrameworkConfiguration configuration,
         IServiceProvider serviceProvider
     ) : IHostedService
     {
@@ -19,25 +19,19 @@ namespace Nixon.Identity.OpenIddict.Template.BackgroundService;
 
             foreach (var application in configuration.Applications)
             {
-                var descriptor = CreateApplicationDescriptor(
-                    application.ClientId,
-                    application.AllowedGrantTypes,
-                    []
-                );
+                var descriptor = CreateApplicationDescriptor(application);
                 
                 await manager.CreateOrUpdateAsync(descriptor, cancellationToken);
             }
         }
 
-        private static OpenIddictApplicationDescriptor CreateApplicationDescriptor(
-            string clientId,
-            string[] grantTypes,
-            IEnumerable<string> redirectUris
+        private OpenIddictApplicationDescriptor CreateApplicationDescriptor(
+            IOpenIddictFrameworkApplicationConfiguration application
         )
         {
-            var application = new OpenIddictApplicationDescriptor
+            var descriptor = new OpenIddictApplicationDescriptor
             {
-                ClientId = clientId,
+                ClientId = application.ClientId,
                 ClientType = OpenIddictConstants.ClientTypes.Public,
                 Permissions =
                 {
@@ -51,10 +45,10 @@ namespace Nixon.Identity.OpenIddict.Template.BackgroundService;
                 }
             };
 
-            application.AddGrantTypePermissions(grantTypes);
-            application.AddRedirectUris(redirectUris);
+            descriptor.AddGrantTypePermissions(application.AllowedGrantTypes);
+            descriptor.AddRedirectUris(configuration.GetRedirectUris(application));
 
-            return application;
+            return descriptor;
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

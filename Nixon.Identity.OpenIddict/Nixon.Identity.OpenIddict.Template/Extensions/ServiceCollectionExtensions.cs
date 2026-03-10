@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -10,27 +11,57 @@ using Nixon.Identity.OpenIddict.Template.Configuration;
 
 namespace Nixon.Identity.OpenIddict.Template.Extensions;
 
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public static class ServiceCollectionExtensions
 {
-    private static void AddCoreServices(IServiceCollection services, OpenIddictIdentityServerConfiguration configuration)
+    private static void AddCoreServices<TConfiguration>(IServiceCollection services, TConfiguration configuration)
+        where TConfiguration : class, IOpenIddictFrameworkConfiguration
     {
         services.AddHostedService<ApplicationRegistrationBackgroundService>();
         
+        services.TryAddSingleton<IOpenIddictFrameworkConfiguration>(configuration);
+        
         services.TryAddSingleton(configuration);
+    }
+
+    private static T LoadConfiguration<T>(IConfiguration configuration)
+        where T : IOpenIddictFrameworkConfiguration, new()
+    {
+        var section = configuration.GetRequiredSection("OpenIddictIdentityServer");
+
+        var loaded = new T();
+        
+        section.Bind(loaded);
+        
+        return loaded;
     }
     
     public static IServiceCollection AddOpenIddictIdentityServer<TContext>(
         this IServiceCollection services,
         IConfiguration configuration,
         IHostEnvironment environment,
-        Action<OpenIdDictIdentityServerBuilder>? configure = null)
-    where TContext : DbContext
+        Action<OpenIddictFrameworkBuilder<OpenIddictFrameworkConfiguration>>? configure = null)
+        where TContext : DbContext
     {
-        var loadedConfiguration = OpenIddictIdentityServerConfiguration.ReadFrom(configuration);
+        return AddOpenIddictIdentityServer<TContext, OpenIddictFrameworkConfiguration>(
+            services, configuration, environment, configure
+        );
+    }
+
+    public static IServiceCollection AddOpenIddictIdentityServer<TContext, TConfiguration>(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        Action<OpenIddictFrameworkBuilder<TConfiguration>>? configure = null)
+        where TContext : DbContext
+        where TConfiguration : class, IOpenIddictFrameworkConfiguration, new()
+    {
+        var loadedConfiguration = LoadConfiguration<TConfiguration>(configuration);
         
-        var templateBuilder = new OpenIdDictIdentityServerBuilder();
+        var identityServerBuilder = new OpenIddictFrameworkBuilder<TConfiguration>(loadedConfiguration, environment);
         
-        configure?.Invoke(templateBuilder);
+        configure?.Invoke(identityServerBuilder);
         
         AddCoreServices(services, loadedConfiguration);
         
@@ -39,47 +70,8 @@ public static class ServiceCollectionExtensions
             {
                 core.UseEntityFrameworkCore<TContext>();
             })
-            .AddServer(server =>
-            {
-                server.AddDevelopmentSigningCertificate();
-                server.AddEncryptionKey(loadedConfiguration.EncryptionSecurityKey);
-
-                server.UseDataProtection();
-
-                server.SetIssuer(loadedConfiguration.Issuer);
-                server.SetAccessTokenLifetime(TimeSpan.FromDays(7));
-
-                server.AllowRefreshTokenFlow(TimeSpan.FromDays(30));
-                server.AllowAuthorizationCodeFlow();
-                server.AllowCustomFlows(loadedConfiguration.AllAllowedGrantTypes);
-                
-                server.SetTokenEndpointUris("connect/token");
-                server.SetAuthorizationEndpointUris("connect/authorize");
-                
-                server.UseAspNetCore(builder => builder
-                    .EnableAuthorizationEndpointPassthrough()
-                );
-                
-                templateBuilder.Server.ConfigureAction?.Invoke(server);
-            })
-            .AddClient(client =>
-            {
-                client.SetRedirectionEndpointUris("connect/redirect");
-
-                client.AllowAuthorizationCodeFlow();
-
-                client.UseDataProtection();
-                client.UseSystemNetHttp();
-
-                client.AddValidateIssuerGoogleWorkaround();
-                
-                client.AddEncryptionKey(loadedConfiguration.EncryptionSecurityKey);
-                client.AddDevelopmentSigningCertificate();
-                
-                client.UseAspNetCore(builder => builder
-                    .DisableDevelopmentTransportSecurityRequirement(environment)
-                );
-            })
+            .AddServer(identityServerBuilder.Server.Configure)
+            .AddClient(identityServerBuilder.Client.Configure)
             .AddValidation(validation =>
             {
                 validation.SetIssuer(loadedConfiguration.Issuer);

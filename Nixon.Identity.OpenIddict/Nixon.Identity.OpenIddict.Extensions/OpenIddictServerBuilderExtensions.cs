@@ -1,7 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
-using OpenIddict.Server;
-using static OpenIddict.Server.OpenIddictServerEvents;
 
 namespace Nixon.Identity.OpenIddict.Extensions;
 

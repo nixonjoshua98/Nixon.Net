@@ -17,11 +17,11 @@
 	<PropertyGroup>
 		<Title>$(PackageId)</Title>
 		<Authors>Joshua Nixon</Authors>
-		<PackageProjectUrl>https://github.com/nixonjoshua98/Nixon</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/nixonjoshua98/Nixon</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/nixonjoshua98/Nixon.Net</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/nixonjoshua98/Nixon.Net</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-		<Version>0.4.2</Version>
+		<Version>0.5.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
