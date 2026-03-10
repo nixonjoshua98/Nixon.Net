@@ -36,8 +36,8 @@ jobs:
       - name: Pack NuGet packages
         run: |
           # Nixon.OpenIddict
-          dotnet pack Nixon.OpenIddict/Nixon.Identity.OpenIddict.Extensions/Nixon.Identity.OpenIddict.Extensions.csproj --configuration Release --no-build -o ./dist
-          dotnet pack Nixon.OpenIddict/Nixon.Identity.OpenIddict.Template/Nixon.Identity.OpenIddict.Template.csproj --configuration Release --no-build -o ./dist
+          dotnet pack Nixon.Identity.OpenIddict/Nixon.Identity.OpenIddict.Extensions/Nixon.Identity.OpenIddict.Extensions.csproj --configuration Release --no-build -o ./dist
+          dotnet pack Nixon.Identity.OpenIddict/Nixon.Identity.OpenIddict.Template/Nixon.Identity.OpenIddict.Template.csproj --configuration Release --no-build -o ./dist
           
           # Nixon.Extensions
           dotnet pack Nixon.Extensions/Nixon.Extensions.Configuration/Nixon.Extensions.Configuration.csproj --configuration Release --no-build -o ./dist
