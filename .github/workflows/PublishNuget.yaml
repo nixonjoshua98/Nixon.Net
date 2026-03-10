@@ -23,7 +23,7 @@ jobs:
 
       - name: Restore dependencies
         run: |
-          dotnet restore Nixon.slnx
+          dotnet restore Nixon.Net.slnx
 
       - name: Build solution
         run: |
